@@ -27,18 +27,16 @@
         {% for pos, players in data.positions.items() %}
             {% if players %}
 
-                <h2 class="text-xl font-bold mt-8 mb-3 text-indigo-300 border-b border-gray-700 pb-1 flex justify-between">
+                <h2 class="text-xl font-bold mt-8 mb-3 text-indigo-300 border-b border-gray-700 pb-1 flex items-center gap-2">
                     <span>{{ pos }}</span>
-                    <span class="text-indigo-400 text-sm">
-                        {{ data.totals[pos] }}
-                    </span>
+                    <span class="text-indigo-400 text-base">— {{ "{:,}".format(data.totals[pos]) }}</span>
                 </h2>
 
                 <!-- ONE COLUMN ONLY, ULTRA SLIM CARDS -->
                 <div class="flex flex-col gap-2">
 
                     {% for p in players %}
-                        <div class="flex items-center gap-3 bg-gray-700 p-2 rounded-lg border border-gray-600 max-w-xs">
+                        <div class="flex items-center gap-2 bg-gray-700 p-2 rounded-lg border border-gray-600 max-w-xs">
 
                             <!-- Small Headshot -->
                             <img src="{{ p.headshot }}" 
@@ -47,7 +45,13 @@
                             <!-- Player Info -->
                             <div class="flex flex-col leading-tight">
                                 <span class="text-gray-200 font-medium text-sm">{{ p.name }}</span>
-                                <span class="text-gray-400 text-xs">{{ p.position }} — {{ p.team }}</span>
+                                <span class="text-gray-400 text-xs">
+                                    {% if p.ktc_pos_rank %}
+                                        {{ p.position }}{{ p.ktc_pos_rank }} — {{ p.team }}
+                                    {% else %}
+                                        {{ p.position }} — {{ p.team }}
+                                    {% endif %}
+                                </span>
 
                                 {% if p.ktc_value is not none %}
                                     <span class="text-indigo-300 text-xs font-semibold">

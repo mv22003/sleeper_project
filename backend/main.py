@@ -165,6 +165,7 @@ def show_roster(request: Request, username: str, league_id: str):
         # -------- KTC Value Lookup (normalized) --------
         norm_name = normalize_name(p.get("full_name"))
         ktc_entry = ktc_by_name.get(norm_name)
+        ktc_pos_rank = ktc_entry["pos_rank"] if ktc_entry else None
         ktc_value = ktc_entry["value"] if ktc_entry else 0
 
 
@@ -177,6 +178,7 @@ def show_roster(request: Request, username: str, league_id: str):
             "headshot": headshot,
             "team_logo": team_logo,
             "ktc_value": ktc_value,
+            "ktc_pos_rank": ktc_pos_rank
         }
 
         pos = p.get("position")
