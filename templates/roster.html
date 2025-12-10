@@ -27,29 +27,36 @@
         {% for pos, players in data.positions.items() %}
             {% if players %}
 
-                <h2 class="text-2xl font-bold mt-8 mb-3 text-indigo-300 border-b border-gray-700 pb-1">
-                    {{ pos }}
+                <h2 class="text-xl font-bold mt-8 mb-3 text-indigo-300 border-b border-gray-700 pb-1 flex justify-between">
+                    <span>{{ pos }}</span>
+                    <span class="text-indigo-400 text-sm">
+                        {{ data.totals[pos] }}
+                    </span>
                 </h2>
 
-                <div class="space-y-3">
+                <!-- ONE COLUMN ONLY, ULTRA SLIM CARDS -->
+                <div class="flex flex-col gap-2">
 
                     {% for p in players %}
-                        <div class="flex items-center gap-4 bg-gray-700 p-3 rounded-lg border border-gray-600">
+                        <div class="flex items-center gap-3 bg-gray-700 p-2 rounded-lg border border-gray-600 max-w-xs">
 
-                            <!-- Player Headshot -->
+                            <!-- Small Headshot -->
                             <img src="{{ p.headshot }}" 
-                                 class="w-12 h-12 rounded-full object-cover border border-gray-500">
+                                 class="w-8 h-8 rounded-full object-cover border border-gray-500">
 
-                            <div class="flex-1">
-                                <p class="text-gray-200 font-semibold">{{ p.name }}</p>
-                                <p class="text-gray-400 text-sm">{{ p.position }} — {{ p.team }}</p>
+                            <!-- Player Info -->
+                            <div class="flex flex-col leading-tight">
+                                <span class="text-gray-200 font-medium text-sm">{{ p.name }}</span>
+                                <span class="text-gray-400 text-xs">{{ p.position }} — {{ p.team }}</span>
+
+                                {% if p.ktc_value is not none %}
+                                    <span class="text-indigo-300 text-xs font-semibold">
+                                        KTC: {{ p.ktc_value }}
+                                    </span>
+                                {% endif %}
                             </div>
 
-                            <!-- Team Logo -->
-                            {% if p.team_logo %}
-                                <img src="{{ p.team_logo }}" 
-                                     class="w-10 h-10 object-contain">
-                            {% endif %}
+
                         </div>
                     {% endfor %}
 
