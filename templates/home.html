@@ -6,32 +6,33 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-100 min-h-screen p-6">
+<body class="bg-gray-900 min-h-screen p-6">
 
-<div class="max-w-xl mx-auto bg-white shadow-xl p-6 rounded-xl">
+<div class="max-w-xl mx-auto bg-gray-800 shadow-xl p-6 rounded-xl border border-gray-700">
 
-    <h1 class="text-3xl font-bold text-center mb-6 text-indigo-600">
+    <h1 class="text-3xl font-bold text-center mb-6 text-indigo-400">
         Sleeper Dynasty Analyzer
     </h1>
 
     <form action="/show_roster" method="get">
 
-        <label class="block font-semibold mb-1">Sleeper Username:</label>
+        <label class="block font-semibold mb-1 text-gray-300">Sleeper Username:</label>
         <input
             name="username"
-            class="w-full border p-2 rounded mb-4"
-            placeholder="Ex.: johncena67" required>
+            class="w-full bg-gray-700 border border-gray-600 text-gray-200 p-2 rounded mb-4"
+            placeholder="Enter your Sleeper username"
+            required>
 
-        <label class="block font-semibold mb-1">League ID:</label>
+        <label class="block font-semibold mb-1 text-gray-300">League ID:</label>
         <input
             name="league_id"
-            class="w-full border p-2 rounded mb-4"
-            placeholder="Enter your Sleeper League ID"
+            class="w-full bg-gray-700 border border-gray-600 text-gray-200 p-2 rounded mb-4"
+            placeholder="Enter your Sleeper league ID"
             required>
 
         <button
             type="submit"
-            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded mt-4">
+            class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 rounded mt-4">
             View Roster
         </button>
 

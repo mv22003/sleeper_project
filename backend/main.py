@@ -83,12 +83,28 @@ def show_roster(request: Request, username: str, league_id: str):
         if not p:
             continue
 
+        team = p.get("team", "FA")
+        team_logo = None
+        if team not in [None, "FA"]:
+            team_logo = f"https://a.espncdn.com/i/teamlogos/nfl/500/{team.lower()}.png"
+
+        # Try official provided headshot
+        headshot = p.get("metadata", {}).get("headshot")
+
+        # Use modern Sleeper fallback format (correct one)
+        if not headshot:
+            headshot = f"https://sleepercdn.com/content/nfl/players/thumb/{pid}.jpg"
+
         player_info = {
             "id": pid,
             "name": p.get("full_name"),
             "position": p.get("position"),
-            "team": p.get("team", "FA")
+            "team": team,
+            "headshot": headshot,
+            "team_logo": team_logo
         }
+
+
 
         pos = p.get("position")
 
