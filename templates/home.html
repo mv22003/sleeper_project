@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sleeper Dynasty Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen p-6">
+
+<div class="max-w-xl mx-auto bg-white shadow-xl p-6 rounded-xl">
+
+    <h1 class="text-3xl font-bold text-center mb-6 text-indigo-600">
+        Sleeper Dynasty Analyzer
+    </h1>
+
+    <form action="/show_roster" method="get">
+
+        <label class="block font-semibold mb-1">Sleeper Username:</label>
+        <input
+            name="username"
+            class="w-full border p-2 rounded mb-4"
+            placeholder="Ex.: johncena67" required>
+
+        <label class="block font-semibold mb-1">League ID:</label>
+        <input
+            name="league_id"
+            class="w-full border p-2 rounded mb-4"
+            placeholder="Enter your Sleeper League ID"
+            required>
+
+        <button
+            type="submit"
+            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded mt-4">
+            View Roster
+        </button>
+
+    </form>
+
+</div>
+
+</body>
+</html>

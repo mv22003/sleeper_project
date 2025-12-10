@@ -1,4 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from sleeper import SleeperClient
 
@@ -7,6 +9,7 @@ from sleeper import SleeperClient
 # --------------------------------------------------------
 app = FastAPI(title="Sleeper API")
 
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -14,118 +17,98 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Create global instance of the Sleeper client
+# Template loader
+templates = Jinja2Templates(directory="templates")
+
+# Sleeper client instance
 client = SleeperClient()
 
 # --------------------------------------------------------
-# Root Test Endpoint
+# HOME PAGE
 # --------------------------------------------------------
-@app.get("/")
-def home():
-    return {"message": "API is running!"}
+@app.get("/", response_class=HTMLResponse)
+def home(request: Request):
+    return templates.TemplateResponse("home.html", {"request": request})
 
 # --------------------------------------------------------
-# 1. ROSTER FOR ONE SEASON
+# FORM HANDLER -> SHOW ROSTER PAGE
 # --------------------------------------------------------
-@app.get("/roster/{username}/{season}")
-def get_user_roster_by_season(username: str, season: int):
-    """
-    Returns the user's roster for a given NFL season.
-    This is the foundation for comparing seasons.
-    """
-    # 1. Fetch user
+@app.get("/show_roster", response_class=HTMLResponse)
+def show_roster(request: Request, username: str, league_id: str):
+
+    # Validate user
     user = client.get_user(username)
-    if "user_id" not in user:
-        return {"error": "User not found"}
-
+    if not user or "user_id" not in user:
+        return templates.TemplateResponse(
+            "roster.html",
+            {"request": request, "error": f"User '{username}' not found.", "data": None}
+        )
     user_id = user["user_id"]
 
-    # 2. Fetch user's leagues for this season
-    leagues = client.get_user_leagues(user_id, season)
-    if not leagues:
-        return {"error": f"No leagues found for {season}"}
+    # Get league
+    league = client.get_league(league_id)
+    if "league_id" not in league:
+        return templates.TemplateResponse(
+            "roster.html",
+            {"request": request, "error": f"League '{league_id}' not found.", "data": None}
+        )
+    season = league.get("season")
 
-    # 3. Pick FIRST league (later you'll let user choose)
-    league = leagues[0]
-    league_id = league["league_id"]
-
-    # 4. Fetch rosters
+    # Get rosters
     rosters = client.get_rosters(league_id)
-
-    # 5. Find THIS user's roster
     roster = next((r for r in rosters if r.get("owner_id") == user_id), None)
-    if not roster:
-        return {"error": "Roster not found for user in this league"}
 
-    # 6. Fetch Sleeper player database
+    if not roster:
+        return templates.TemplateResponse(
+            "roster.html",
+            {"request": request, "error": f"User '{username}' not in league '{league_id}'.", "data": None}
+        )
+
+    # Player database
     players = client.get_players()
 
-    # 7. Convert player IDs → readable info
-    detailed_players = []
+    # Organize players by position
+    positions = {
+        "QB": [],
+        "RB": [],
+        "WR": [],
+        "TE": [],
+        "K": [],
+        "DEF": [],
+        "OTHER": []
+    }
+
     for pid in roster.get("players", []):
         p = players.get(str(pid))
         if not p:
             continue
-        detailed_players.append({
+
+        player_info = {
             "id": pid,
             "name": p.get("full_name"),
             "position": p.get("position"),
-            "team": p.get("team"),
-        })
-
-    return {
-        "username": username,
-        "season": season,
-        "league_name": league.get("name"),
-        "league_id": league_id,
-        "record": {
-            "wins": roster.get("settings", {}).get("wins"),
-            "losses": roster.get("settings", {}).get("losses"),
-        },
-        "players": detailed_players,
-    }
-
-# --------------------------------------------------------
-# 2. LEAGUE HISTORY FOR THIS USER
-# --------------------------------------------------------
-@app.get("/league_history/{league_id}/{username}")
-def get_league_history(league_id: str, username: str):
-    """
-    Walks backwards through previous_league_id to reconstruct
-    this user's full dynasty history inside a league.
-    """
-    # Fetch user ID
-    user = client.get_user(username)
-    if "user_id" not in user:
-        return {"error": "User not found"}
-
-    user_id = user["user_id"]
-
-    history = {}
-    current_league_id = league_id
-
-    # Follow the chain of league IDs backwards
-    while current_league_id:
-        league = client.get_league(current_league_id)
-        if not league or "season" not in league:
-            break
-
-        season_year = league["season"]
-
-        # Fetch rosters for this season
-        rosters = client.get_rosters(current_league_id)
-        roster = next((r for r in rosters if r.get("owner_id") == user_id), None)
-
-        # Save roster for this season
-        history[season_year] = {
-            "league_id": current_league_id,
-            "roster": roster
+            "team": p.get("team", "FA")
         }
 
-        # Move to previous season
-        current_league_id = league.get("previous_league_id")
+        pos = p.get("position")
 
-    return {
+        if pos in positions:
+            positions[pos].append(player_info)
+        else:
+            positions["OTHER"].append(player_info)
+
+    # Build clean response
+    data = {
         "username": username,
-        "history": history
+        "season": season,
+        "league": {
+            "league_id": league_id,
+            "name": league.get("name")
+        },
+        "positions": positions
     }
+
+    return templates.TemplateResponse(
+        "roster.html",
+        {"request": request, "data": data, "error": None}
+    )
