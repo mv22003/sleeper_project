@@ -1,8 +1,13 @@
 import requests
+import time
 
 # Base URL for the Sleeper public API
 BASE_URL = "https://api.sleeper.app/v1"
 
+# Sleeper Players Cache
+PLAYERS_CACHE = None
+PLAYERS_CACHE_TIME = 0
+PLAYERS_CACHE_TTL = 3600 * 24  # 24 hours
 
 class SleeperClient:
     """
@@ -92,13 +97,21 @@ class SleeperClient:
         """
         Fetch the full Sleeper NFL players dictionary.
 
-        Returns:
-            dict: Mapping of player_id → player metadata.
-
-        Notes:
-            - This is a large payload
-            - Sleeper recommends caching this response
-            - Used as the source of truth for player names, positions, teams
+        This response is cached to avoid repeated large downloads.
         """
+        global PLAYERS_CACHE, PLAYERS_CACHE_TIME
+
+        # Return cached data if still valid
+        if PLAYERS_CACHE and (time.time() - PLAYERS_CACHE_TIME) < PLAYERS_CACHE_TTL:
+            return PLAYERS_CACHE
+
+        # Fetch fresh data from Sleeper API
         url = f"{self.base}/players/nfl"
-        return requests.get(url).json()
+        data = requests.get(url).json()
+
+        # Update cache
+        PLAYERS_CACHE = data
+        PLAYERS_CACHE_TIME = time.time()
+
+        return data
+
