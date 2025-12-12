@@ -4,9 +4,9 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from sleeper import SleeperClient
 
-from services.ktc import *
-from services.leagues import *
-from services.players import *
+from backend.services.ktc import *
+from backend.services.leagues import *
+from backend.services.players import *
 
 KTC_CACHE = None
 KTC_CACHE_TIME = 0
