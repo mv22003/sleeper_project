@@ -27,6 +27,7 @@ from sleeper import SleeperClient
 from backend.services.ktc import *
 from backend.services.leagues import *
 from backend.services.players import *
+from backend.services.lineup import *
 
 
 # Create the FastAPI application
@@ -111,6 +112,13 @@ def show_roster(request: Request, username: str, league_id: str):
 
     # Fetch league metadata to confirm validity and extract season
     league = client.get_league(league_id)
+
+    # Fetch number of roster slots for each position, bench, IR & TAXI
+    roster_slots = normalize_roster_slots(
+        league.get("roster_positions", []),
+        league.get("settings", {})
+    )
+
     if "league_id" not in league:
         return templates.TemplateResponse(
             "roster.html",

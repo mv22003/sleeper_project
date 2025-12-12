@@ -30,10 +30,10 @@ def get_all_user_leagues(client, user_id: str, start_year=2018, end_year=2025):
     cached_time = USER_LEAGUES_CACHE_TIME.get(user_id)
 
     if cached and cached_time and (time.time() - cached_time) < USER_LEAGUES_CACHE_TTL:
-        print("CACHE HIT: user leagues", user_id)
+        # print("CACHE HIT: user leagues", user_id)
         return cached
     
-    print("CACHE MISS: user leagues", user_id)
+    # print("CACHE MISS: user leagues", user_id)
 
     # Dictionary keyed by league name, each value is a list of seasons
     grouped = defaultdict(list)
@@ -64,7 +64,8 @@ def get_all_user_leagues(client, user_id: str, start_year=2018, end_year=2025):
     # --------------------------------------------------
     # Store result in cache
     # --------------------------------------------------
-    USER_LEAGUES_CACHE[user_id] = grouped
-    USER_LEAGUES_CACHE_TIME[user_id] = time.time()
+    if user_id not in USER_LEAGUES_CACHE:
+        USER_LEAGUES_CACHE[user_id] = grouped
+        USER_LEAGUES_CACHE_TIME[user_id] = time.time()
 
     return grouped
