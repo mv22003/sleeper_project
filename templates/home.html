@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -39,6 +39,135 @@
     </form>
 
 </div>
+
+</body>
+</html> -->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sleeper Dynasty Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-900 min-h-screen p-6">
+
+<div class="max-w-xl mx-auto bg-gray-800 shadow-xl p-6 rounded-xl border border-gray-700">
+
+    <h1 class="text-3xl font-bold text-center mb-6 text-indigo-400">
+        Sleeper Dynasty Analyzer
+    </h1>
+
+    <form action="/show_roster" method="get">
+
+        <!-- Username -->
+        <label class="block font-semibold mb-1 text-gray-300">
+            Sleeper Username
+        </label>
+        <input
+            id="username"
+            name="username"
+            class="w-full bg-gray-700 border border-gray-600 text-gray-200 p-2 rounded mb-4"
+            placeholder="Enter your Sleeper username"
+            required
+        >
+
+        <!-- League Name -->
+        <label class="block font-semibold mb-1 text-gray-300">
+            League
+        </label>
+        <select
+            id="leagueSelect"
+            class="w-full bg-gray-700 border border-gray-600 text-gray-200 p-2 rounded mb-4"
+            disabled
+        >
+            <option>Select a league</option>
+        </select>
+
+        <!-- Season (actually submits league_id) -->
+        <label class="block font-semibold mb-1 text-gray-300">
+            Season
+        </label>
+        <select
+            id="seasonSelect"
+            name="league_id"
+            class="w-full bg-gray-700 border border-gray-600 text-gray-200 p-2 rounded mb-6"
+            disabled
+        >
+            <option>Select a season</option>
+        </select>
+
+        <button
+            type="submit"
+            class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 rounded disabled:opacity-50"
+        >
+            View Roster
+        </button>
+
+    </form>
+</div>
+
+<script>
+const usernameInput = document.getElementById("username");
+const leagueSelect  = document.getElementById("leagueSelect");
+const seasonSelect  = document.getElementById("seasonSelect");
+
+let leagueData = {};
+
+async function loadLeagues(username) {
+    leagueSelect.innerHTML = "<option>Loading leagues...</option>";
+    leagueSelect.disabled = true;
+    seasonSelect.disabled = true;
+
+    try {
+        const res = await fetch(`/user_leagues?username=${username}`);
+        leagueData = await res.json();
+
+        leagueSelect.innerHTML = "";
+
+        if (leagueData.error) {
+            leagueSelect.innerHTML = "<option>User not found</option>";
+            return;
+        }
+
+        for (const leagueName in leagueData) {
+            const opt = document.createElement("option");
+            opt.value = leagueName;
+            opt.textContent = leagueName;
+            leagueSelect.appendChild(opt);
+        }
+
+        leagueSelect.disabled = false;
+        leagueSelect.dispatchEvent(new Event("change"));
+
+    } catch (err) {
+        leagueSelect.innerHTML = "<option>Error loading leagues</option>";
+    }
+}
+
+leagueSelect.addEventListener("change", () => {
+    seasonSelect.innerHTML = "";
+    const selectedLeague = leagueSelect.value;
+    const seasons = leagueData[selectedLeague] || [];
+
+    seasons.forEach(l => {
+        const opt = document.createElement("option");
+        opt.value = l.league_id;   // IMPORTANT: submit league_id
+        opt.textContent = l.season;
+        seasonSelect.appendChild(opt);
+    });
+
+    seasonSelect.disabled = false;
+});
+
+usernameInput.addEventListener("blur", () => {
+    if (usernameInput.value.trim()) {
+        loadLeagues(usernameInput.value.trim());
+    }
+});
+</script>
 
 </body>
 </html>

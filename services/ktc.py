@@ -1,9 +1,15 @@
 import requests
+import time
 from bs4 import BeautifulSoup
 from collections import defaultdict
 
 KTC_URL = "https://keeptradecut.com/dynasty-rankings?page={page}&filters=QB|WR|RB|TE&format=0"
 
+
+# --------------------------------------------------------
+# KTC Value Fetcher
+# Credits to: https://github.com/ees4/KeepTradeCut-Scraper/blob/main
+# --------------------------------------------------------
 def scrape_ktc_sf():
     players = []
 
@@ -61,3 +67,20 @@ def scrape_ktc_sf():
             player["pos_rank"] = i   # e.g., RB23, WR14, TE8
 
     return players
+
+
+
+KTC_CACHE = None
+KTC_CACHE_TIME = 0
+KTC_CACHE_TTL = 3600 * 12
+
+def get_ktc_values():
+    global KTC_CACHE, KTC_CACHE_TIME
+
+    if KTC_CACHE and (time.time() - KTC_CACHE_TIME) < KTC_CACHE_TTL:
+        return KTC_CACHE
+
+    data = scrape_ktc_sf()
+    KTC_CACHE = data
+    KTC_CACHE_TIME = time.time()
+    return data

@@ -3,9 +3,10 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from sleeper import SleeperClient
-import requests
-import re
-import time
+
+from services.ktc import *
+from services.leagues import *
+from services.players import *
 
 KTC_CACHE = None
 KTC_CACHE_TIME = 0
@@ -30,54 +31,14 @@ templates = Jinja2Templates(directory="templates")
 # Sleeper API client
 client = SleeperClient()
 
+@app.get("/user_leagues")
+def user_leagues(username: str):
+    user = client.get_user(username)
+    if "user_id" not in user:
+        return {"error": "User not found"}
 
-# --------------------------------------------------------
-# Utility — Normalize player names for KTC matching
-# --------------------------------------------------------
-def normalize_name(name: str):
-    if not name:
-        return ""
-
-    name = name.lower()
-
-    # remove punctuation
-    name = re.sub(r"[^a-z0-9\s]", "", name)
-
-    # remove team abbreviations (NO, BUF, CHI, etc.)
-    name = re.sub(r"\b[a-z]{2,3}\b", "", name)
-
-    # remove suffixes
-    suffixes = {"jr", "sr", "ii", "iii", "iv", "v"}
-    parts = name.split()
-    parts = [p for p in parts if p not in suffixes]
-
-    # collapse multiple spaces
-    name = " ".join(parts)
-    return name.strip()
-
-
-
-# --------------------------------------------------------
-# KTC Value Fetcher
-# Credits to: https://github.com/ees4/KeepTradeCut-Scraper/blob/main
-# --------------------------------------------------------
-from backend.ktc_scraper import scrape_ktc_sf
-
-def get_ktc_values():
-    global KTC_CACHE, KTC_CACHE_TIME
-
-    if KTC_CACHE and (time.time() - KTC_CACHE_TIME) < KTC_CACHE_TTL:
-        print("Using cached KTC data")
-        return KTC_CACHE
-
-    print("Scraping fresh KTC data...")
-    data = scrape_ktc_sf()
-
-    KTC_CACHE = data
-    KTC_CACHE_TIME = time.time()
-
-    return data
-
+    grouped = get_all_user_leagues(client, user["user_id"])
+    return grouped
 
 
 # --------------------------------------------------------
@@ -144,6 +105,7 @@ def show_roster(request: Request, username: str, league_id: str):
         "RB": [],
         "WR": [],
         "TE": [],
+        "OTHER": []
     }
 
     for pid in roster.get("players", []):
