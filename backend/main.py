@@ -1,23 +1,42 @@
+"""
+main.py
+
+FastAPI entry point for the Sleeper Dynasty Analyzer.
+
+Responsibilities:
+- Configure the FastAPI application
+- Register middleware (CORS)
+- Initialize shared clients (SleeperClient)
+- Define HTTP endpoints
+- Delegate business logic to service modules
+
+for testing run:
+uvicorn backend.main:app --reload
+
+
+"""
+
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
+
 from sleeper import SleeperClient
 
+# Service modules contain all non-trivial logic
 from backend.services.ktc import *
 from backend.services.leagues import *
 from backend.services.players import *
 
-KTC_CACHE = None
-KTC_CACHE_TIME = 0
-KTC_CACHE_TTL = 3600 * 12  # refresh every 12 hours
 
-# --------------------------------------------------------
-# Setup FastAPI App
-# --------------------------------------------------------
-app = FastAPI(title="Sleeper API")
+# Create the FastAPI application
+app = FastAPI(
+    title="Sleeper API",
+    description="Sleeper Dynasty League Analyzer",
+    version="1.0.0"
+)
 
-# CORS
+# Enable cross-origin requests so frontend JS can call API endpoints
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,81 +44,115 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Template loader
+# Jinja2 template engine for HTML rendering
 templates = Jinja2Templates(directory="templates")
 
-# Sleeper API client
+# Single shared client for all Sleeper API requests
 client = SleeperClient()
+
 
 @app.get("/user_leagues")
 def user_leagues(username: str):
+    """
+    Return all dynasty leagues for a user, grouped by league name.
+
+    This endpoint is called asynchronously by the frontend
+    after the user enters their username.
+    """
+    # Resolve username → user_id
     user = client.get_user(username)
+
+    # Sleeper returns an object without user_id when user is invalid
     if "user_id" not in user:
         return {"error": "User not found"}
 
-    grouped = get_all_user_leagues(client, user["user_id"])
-    return grouped
+    # Delegate season scanning & dynasty filtering to the service layer
+    return get_all_user_leagues(client, user["user_id"])
 
 
-# --------------------------------------------------------
-# HOME PAGE
-# --------------------------------------------------------
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
-    return templates.TemplateResponse("home.html", {"request": request})
+    """
+    Render the landing page.
+
+    The page itself handles all dynamic behavior (JS),
+    this endpoint only serves the template.
+    """
+    return templates.TemplateResponse(
+        "home.html",
+        {"request": request}
+    )
 
 
-# --------------------------------------------------------
-# SHOW ROSTER PAGE
-# --------------------------------------------------------
 @app.get("/show_roster", response_class=HTMLResponse)
 def show_roster(request: Request, username: str, league_id: str):
+    """
+    Render the roster breakdown for a specific league.
 
-    # Validate user
+    This endpoint performs orchestration:
+    - Validate inputs
+    - Fetch data from external APIs
+    - Shape data for template consumption
+    """
+
+    # Fetch and validate the user
     user = client.get_user(username)
-    if not user or "user_id" not in user:
+    if "user_id" not in user:
         return templates.TemplateResponse(
             "roster.html",
-            {"request": request, "error": f"User '{username}' not found.", "data": None}
+            {
+                "request": request,
+                "error": f"User '{username}' not found.",
+                "data": None
+            }
         )
+
     user_id = user["user_id"]
 
-    # Get league
+    # Fetch league metadata to confirm validity and extract season
     league = client.get_league(league_id)
     if "league_id" not in league:
         return templates.TemplateResponse(
             "roster.html",
-            {"request": request, "error": f"League '{league_id}' not found.", "data": None}
+            {
+                "request": request,
+                "error": f"League '{league_id}' not found.",
+                "data": None
+            }
         )
+
     season = league.get("season")
 
-    # Find user's roster
+    # Identify the roster owned by this user in the league
     rosters = client.get_rosters(league_id)
-    roster = next((r for r in rosters if r.get("owner_id") == user_id), None)
+    roster = next(
+        (r for r in rosters if r.get("owner_id") == user_id),
+        None
+    )
 
     if not roster:
         return templates.TemplateResponse(
             "roster.html",
-            {"request": request, "error": f"User '{username}' not in league '{league_id}'.", "data": None}
+            {
+                "request": request,
+                "error": "User does not own a roster in this league.",
+                "data": None
+            }
         )
 
-    # --------------------------------------------------------
-    # Get KTC Values
-    # --------------------------------------------------------
+    # Fetch KeepTradeCut values (cached to avoid repeated scraping)
     ktc_data = get_ktc_values()
 
-    # Build lookup by normalized name
-    ktc_by_name = {}
-    for item in ktc_data:
-        norm = normalize_name(item["name"])
-        ktc_by_name[norm] = item
+    # Build a fast lookup table using normalized player names
+    ktc_by_name = {
+        normalize_name(item["name"]): item
+        for item in ktc_data
+    }
 
-
-    # --------------------------------------------------------
-    # Build Player List
-    # --------------------------------------------------------
+    # Fetch the global Sleeper player dictionary
     players = client.get_players()
 
+    # Buckets used to group players for display
     positions = {
         "QB": [],
         "RB": [],
@@ -108,64 +161,56 @@ def show_roster(request: Request, username: str, league_id: str):
         "OTHER": []
     }
 
+    # Translate raw player IDs into display-ready player objects
     for pid in roster.get("players", []):
-        p = players.get(str(pid))
-        if not p:
+        player = players.get(str(pid))
+        if not player:
             continue
 
-        # -------- Team Logo --------
-        team = p.get("team", "FA")
-        team_logo = None
-        if team not in [None, "FA"]:
-            team_logo = f"https://a.espncdn.com/i/teamlogos/nfl/500/{team.lower()}.png"
+        # Team and team logo (skip free agents)
+        team = player.get("team", "FA")
+        team_logo = (
+            f"https://a.espncdn.com/i/teamlogos/nfl/500/{team.lower()}.png"
+            if team not in [None, "FA"]
+            else None
+        )
 
-        # -------- Player Headshot --------
-        headshot = p.get("metadata", {}).get("headshot")
-        if not headshot:
-            headshot = f"https://sleepercdn.com/content/nfl/players/thumb/{pid}.jpg"
+        # Prefer Sleeper headshot, fall back to default CDN
+        headshot = (
+            player.get("metadata", {}).get("headshot")
+            or f"https://sleepercdn.com/content/nfl/players/thumb/{pid}.jpg"
+        )
 
-        # -------- KTC Value Lookup (normalized) --------
-        norm_name = normalize_name(p.get("full_name"))
+        # Match Sleeper player to KTC value using normalized names
+        norm_name = normalize_name(player.get("full_name"))
         ktc_entry = ktc_by_name.get(norm_name)
-        ktc_pos_rank = ktc_entry["pos_rank"] if ktc_entry else None
-        ktc_value = ktc_entry["value"] if ktc_entry else 0
-
-
 
         player_info = {
             "id": pid,
-            "name": p.get("full_name"),
-            "position": p.get("position"),
+            "name": player.get("full_name"),
+            "position": player.get("position"),
             "team": team,
             "headshot": headshot,
             "team_logo": team_logo,
-            "ktc_value": ktc_value,
-            "ktc_pos_rank": ktc_pos_rank
+            "ktc_value": ktc_entry["value"] if ktc_entry else 0,
+            "ktc_pos_rank": ktc_entry["pos_rank"] if ktc_entry else None
         }
 
-        pos = p.get("position")
-        if pos in positions:
-            positions[pos].append(player_info)
-        else:
-            positions["OTHER"].append(player_info)
+        # Assign player to the appropriate position bucket
+        pos = player_info["position"]
+        positions[pos if pos in positions else "OTHER"].append(player_info)
 
-    # --------------------------------------------------------
-    # SORT BY KTC VALUE (DESCENDING)
-    # --------------------------------------------------------
-    for pos, lst in positions.items():
+    # Sort each position group by descending KTC value
+    for lst in positions.values():
         lst.sort(key=lambda p: p["ktc_value"], reverse=True)
 
-    # --------------------------------------------------------
-    # TOTAL VALUE PER POSITION
-    # --------------------------------------------------------
+    # Compute total KTC value per position group
     totals = {
-        pos: sum(player["ktc_value"] for player in lst)
+        pos: sum(p["ktc_value"] for p in lst)
         for pos, lst in positions.items()
     }
 
-    # --------------------------------------------------------
-    # Build Page Data
-    # --------------------------------------------------------
+    # Final object passed to the template renderer
     data = {
         "username": username,
         "season": season,
@@ -174,11 +219,14 @@ def show_roster(request: Request, username: str, league_id: str):
             "name": league.get("name")
         },
         "positions": positions,
-        "totals": totals  
+        "totals": totals
     }
-
 
     return templates.TemplateResponse(
         "roster.html",
-        {"request": request, "data": data, "error": None}
+        {
+            "request": request,
+            "data": data,
+            "error": None
+        }
     )

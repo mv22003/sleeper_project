@@ -1,24 +1,40 @@
 from collections import defaultdict
 
+
 def get_all_user_leagues(client, user_id: str, start_year=2018, end_year=2025):
+    """
+    Retrieve and group all dynasty leagues for a user across multiple seasons.
+
+    Responsibilities:
+    - Query Sleeper for user leagues season-by-season
+    - Filter out non-dynasty leagues
+    - Group leagues by league name
+    - Preserve league_id and season for frontend selection
+    - Sort seasons newest → oldest for usability
+    """
+    # Dictionary keyed by league name, each value is a list of seasons
     grouped = defaultdict(list)
 
+    # Iterate through each NFL season in the configured range
     for season in range(start_year, end_year + 1):
         leagues = client.get_user_leagues(user_id, season)
 
         for league in leagues:
 
-            # ✅ FILTER: only include dynasty leagues
+            # Sleeper league type:
+            # 2 = dynasty, other values represent redraft / bestball / etc.
             if league.get("settings", {}).get("type") != 2:
                 continue
 
+            # Store only the fields needed by the frontend
             grouped[league["name"]].append({
                 "league_id": league["league_id"],
                 "season": season,
                 "avatar": league.get("avatar")
             })
 
-    # Sort leagues newest → oldest
+    # Sort each league's seasons from newest to oldest
+    # This allows the UI to default to the most recent season
     for lst in grouped.values():
         lst.sort(key=lambda x: x["season"], reverse=True)
 

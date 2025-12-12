@@ -2,21 +2,28 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+
+    <!-- Page title shown in browser tab -->
     <title>Sleeper Dynasty Analyzer</title>
+
+    <!-- Tailwind CSS CDN for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body class="bg-gray-900 min-h-screen p-6">
 
+<!-- Main centered container -->
 <div class="max-w-xl mx-auto bg-gray-800 shadow-xl p-6 rounded-xl border border-gray-700">
 
+    <!-- Application title -->
     <h1 class="text-3xl font-bold text-center mb-6 text-indigo-400">
         Sleeper Dynasty Analyzer
     </h1>
 
+    <!-- Main form submits to /show_roster -->
     <form action="/show_roster" method="get">
 
-        <!-- Username -->
+        <!-- Username input -->
         <label class="block font-semibold mb-1 text-gray-300">
             Sleeper Username
         </label>
@@ -28,7 +35,7 @@
             required
         >
 
-        <!-- League Name -->
+        <!-- League selector (populated dynamically via JS) -->
         <label class="block font-semibold mb-1 text-gray-300">
             League
         </label>
@@ -40,7 +47,7 @@
             <option>Select a league</option>
         </select>
 
-        <!-- Season (actually submits league_id) -->
+        <!-- Season selector (actually submits league_id) -->
         <label class="block font-semibold mb-1 text-gray-300">
             Season
         </label>
@@ -53,6 +60,7 @@
             <option>Select a season</option>
         </select>
 
+        <!-- Submit button -->
         <button
             type="submit"
             class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 rounded disabled:opacity-50"
@@ -64,10 +72,11 @@
 </div>
 
 
-<!-- 🔵 Loading Overlay: Loading Roster -->
+<!-- Loading overlay displayed while roster page is loading -->
 <div id="loadingOverlayRoster"
      class="hidden fixed inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center z-50">
     
+    <!-- Spinner -->
     <svg class="animate-spin h-12 w-12 text-indigo-400 mb-4"
          xmlns="http://www.w3.org/2000/svg" fill="none" 
          viewBox="0 0 24 24">
@@ -83,10 +92,11 @@
 </div>
 
 
-<!-- 🔵 Loading Overlay: Loading Leagues -->
+<!-- Loading overlay displayed while leagues are being fetched -->
 <div id="loadingOverlayLeagues"
      class="hidden fixed inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center z-40">
 
+    <!-- Smaller spinner -->
     <svg class="animate-spin h-10 w-10 text-indigo-300 mb-3"
          xmlns="http://www.w3.org/2000/svg" fill="none" 
          viewBox="0 0 24 24">
@@ -103,42 +113,58 @@
 
 
 <script>
+/*
+    Frontend logic for:
+    - Fetching leagues for a username
+    - Populating league and season dropdowns
+    - Managing loading states
+*/
+
+// Input and select elements
 const usernameInput = document.getElementById("username");
 const leagueSelect  = document.getElementById("leagueSelect");
 const seasonSelect  = document.getElementById("seasonSelect");
 
+// Loading overlays
 const loadingOverlayRoster  = document.getElementById("loadingOverlayRoster");
 const loadingOverlayLeagues = document.getElementById("loadingOverlayLeagues");
 
+// Main form element
 const form = document.querySelector("form");
 
-// Show spinner for roster loading
+// Show roster loading spinner on form submission
 form.addEventListener("submit", () => {
     loadingOverlayRoster.classList.remove("hidden");
 });
 
+// Holds league data returned from the backend
 let leagueData = {};
 
-// Load leagues when username is entered
+// Fetch leagues when a username is entered
 async function loadLeagues(username) {
+    // Show league-loading overlay
     loadingOverlayLeagues.classList.remove("hidden");
 
+    // Reset dropdowns while loading
     leagueSelect.innerHTML = "<option>Loading leagues...</option>";
     leagueSelect.disabled = true;
     seasonSelect.disabled = true;
 
     try {
+        // Call backend endpoint to retrieve leagues
         const res = await fetch(`/user_leagues?username=${username}`);
         leagueData = await res.json();
 
         leagueSelect.innerHTML = "";
 
+        // Handle invalid user
         if (leagueData.error) {
             leagueSelect.innerHTML = "<option>User not found</option>";
             loadingOverlayLeagues.classList.add("hidden");
             return;
         }
 
+        // Populate league dropdown with league names
         for (const leagueName in leagueData) {
             const opt = document.createElement("option");
             opt.value = leagueName;
@@ -146,6 +172,7 @@ async function loadLeagues(username) {
             leagueSelect.appendChild(opt);
         }
 
+        // Enable league selector and trigger initial season population
         leagueSelect.disabled = false;
         leagueSelect.dispatchEvent(new Event("change"));
 
@@ -153,14 +180,18 @@ async function loadLeagues(username) {
         leagueSelect.innerHTML = "<option>Error loading leagues</option>";
     }
 
+    // Hide league-loading overlay
     loadingOverlayLeagues.classList.add("hidden");
 }
 
+// Populate seasons when a league is selected
 leagueSelect.addEventListener("change", () => {
     seasonSelect.innerHTML = "";
+
     const selectedLeague = leagueSelect.value;
     const seasons = leagueData[selectedLeague] || [];
 
+    // Each season option submits a league_id
     seasons.forEach(l => {
         const opt = document.createElement("option");
         opt.value = l.league_id;
@@ -171,6 +202,7 @@ leagueSelect.addEventListener("change", () => {
     seasonSelect.disabled = false;
 });
 
+// Trigger league loading when user leaves the username field
 usernameInput.addEventListener("blur", () => {
     if (usernameInput.value.trim()) {
         loadLeagues(usernameInput.value.trim());

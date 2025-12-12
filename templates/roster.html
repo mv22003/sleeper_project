@@ -2,49 +2,82 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+
+    <!-- Page title shown in browser tab -->
     <title>Roster Results</title>
+
+    <!-- Tailwind CSS CDN for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body class="bg-gray-900 min-h-screen p-6">
 
+<!-- Main centered container -->
 <div class="max-w-3xl mx-auto bg-gray-800 shadow-xl p-6 rounded-xl border border-gray-700">
 
+    <!-- Error state: displayed if backend passed an error -->
     {% if error %}
         <p class="text-red-400 text-xl font-semibold mb-4">{{ error }}</p>
-        <a href="/" class="text-indigo-400 hover:underline mt-4 block">← Back to Home</a>
+
+        <!-- Navigation back to home page -->
+        <a href="/" class="text-indigo-400 hover:underline mt-4 block">
+            ← Back to Home
+        </a>
     {% else %}
     
-        <!-- HEADER -->
+        <!-- HEADER: username and season -->
         <h1 class="text-3xl font-bold text-indigo-400 mb-4">
             Roster for {{ data.username }} — Season {{ data.season }}
         </h1>
 
-        <p class="text-lg font-semibold text-gray-200 mb-2">{{ data.league.name }}</p>
-        <p class="text-gray-400 mb-4">League ID: {{ data.league.league_id }}</p>
+        <!-- League name -->
+        <p class="text-lg font-semibold text-gray-200 mb-2">
+            {{ data.league.name }}
+        </p>
+
+        <!-- League identifier (informational/debugging) -->
+        <p class="text-gray-400 mb-4">
+            League ID: {{ data.league.league_id }}
+        </p>
 
         <!-- POSITION GROUPS -->
+        <!-- Iterate through each position (QB, RB, WR, TE, etc.) -->
         {% for pos, players in data.positions.items() %}
             {% if players %}
 
+                <!-- Position header with total KTC value -->
                 <h2 class="text-xl font-bold mt-8 mb-3 text-indigo-300 border-b border-gray-700 pb-1 flex items-center gap-2">
                     <span>{{ pos }}</span>
-                    <span class="text-indigo-400 text-base">— {{ "{:,}".format(data.totals[pos]) }}</span>
+
+                    <!-- Total KTC value for this position -->
+                    <span class="text-indigo-400 text-base">
+                        — {{ "{:,}".format(data.totals[pos]) }}
+                    </span>
                 </h2>
 
-                <!-- ONE COLUMN ONLY, ULTRA SLIM CARDS -->
+                <!-- ONE COLUMN PLAYER LIST -->
+                <!-- Slim card layout for quick scanning -->
                 <div class="flex flex-col gap-2">
 
+                    <!-- Loop through players in this position -->
                     {% for p in players %}
                         <div class="flex items-center gap-2 bg-gray-700 p-2 rounded-lg border border-gray-600 max-w-xs">
 
-                            <!-- Small Headshot -->
-                            <img src="{{ p.headshot }}" 
-                                 class="w-8 h-8 rounded-full object-cover border border-gray-500">
+                            <!-- Player headshot -->
+                            <img
+                                src="{{ p.headshot }}" 
+                                class="w-8 h-8 rounded-full object-cover border border-gray-500"
+                            >
 
-                            <!-- Player Info -->
+                            <!-- Player text info -->
                             <div class="flex flex-col leading-tight">
-                                <span class="text-gray-200 font-medium text-sm">{{ p.name }}</span>
+
+                                <!-- Player name -->
+                                <span class="text-gray-200 font-medium text-sm">
+                                    {{ p.name }}
+                                </span>
+
+                                <!-- Position rank and team -->
                                 <span class="text-gray-400 text-xs">
                                     {% if p.ktc_pos_rank %}
                                         {{ p.position }}{{ p.ktc_pos_rank }} — {{ p.team }}
@@ -53,13 +86,13 @@
                                     {% endif %}
                                 </span>
 
+                                <!-- KTC value (if available) -->
                                 {% if p.ktc_value is not none %}
                                     <span class="text-indigo-300 text-xs font-semibold">
                                         KTC: {{ p.ktc_value }}
                                     </span>
                                 {% endif %}
                             </div>
-
 
                         </div>
                     {% endfor %}
@@ -69,7 +102,10 @@
             {% endif %}
         {% endfor %}
 
-        <a href="/" class="text-indigo-400 hover:underline block mt-10">← Back to Home</a>
+        <!-- Navigation back to home page -->
+        <a href="/" class="text-indigo-400 hover:underline block mt-10">
+            ← Back to Home
+        </a>
 
     {% endif %}
 
