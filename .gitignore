@@ -43,3 +43,4 @@ docs/_build/
 
 # Debug files
 debug.ipynb
+debug_extract.py

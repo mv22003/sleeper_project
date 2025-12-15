@@ -32,12 +32,14 @@ class SleeperClient:
         # Store base API URL for reuse
         self.base = BASE_URL
 
+
     def get_user(self, username: str):
         """
         Fetch a Sleeper user by username.
         """
         url = f"{self.base}/user/{username}"
         return requests.get(url).json()
+
 
     def get_user_leagues(self, user_id: str, season: int):
         """
@@ -46,12 +48,22 @@ class SleeperClient:
         url = f"{self.base}/user/{user_id}/leagues/nfl/{season}"
         return requests.get(url).json()
 
+
     def get_league(self, league_id: str):
-        """
-        Fetch metadata for a specific league.
-        """
         url = f"{self.base}/league/{league_id}"
-        return requests.get(url).json()
+        res = requests.get(url)
+        if res.status_code != 200:
+            return None
+
+        data = res.json()
+
+        # Sleeper returns {} or error payloads sometimes
+        if not isinstance(data, dict) or "league_id" not in data:
+            return None
+
+        return data
+
+
 
     def get_rosters(self, league_id: str):
         global ROSTERS_CACHE, ROSTERS_CACHE_TIME
@@ -72,7 +84,14 @@ class SleeperClient:
         ROSTERS_CACHE_TIME[league_id] = time.time()
 
         return data
+    
 
+    def get_traded_picks(self, league_id: str):
+        """
+        Fetch traded draft picks for a league.
+        """
+        url = f"{self.base}/league/{league_id}/traded_picks"
+        return requests.get(url).json()
 
 
     def get_matchups(self, league_id: str, week: int):
@@ -81,6 +100,7 @@ class SleeperClient:
         """
         url = f"{self.base}/league/{league_id}/matchups/{week}"
         return requests.get(url).json()
+
 
     def get_players(self):
         """
