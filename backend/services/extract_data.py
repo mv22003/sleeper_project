@@ -1,64 +1,19 @@
-# backend/services/extract_data.py
-
 from backend.services.lineup import normalize_roster_slots
+from backend.services.draft_picks import build_league_picks
+from backend.services.leagues import normalize_league_settings
 
 
-def _collect_pick_seasons(league, traded_picks):
-    seasons = set()
+def build_dynasty_snapshot(client, league_id: str) -> dict:
+    """
+    Build a complete dynasty snapshot for a league.
 
-    for p in traded_picks:
-        seasons.add(int(p["season"]))
+    This function orchestrates data collection and delegates
+    domain logic to service modules.
+    """
 
-    seasons.add(int(league["season"]) + 1)
-
-    return sorted(seasons)
-
-
-def _generate_default_picks(league, rosters, seasons):
-    picks = []
-    draft_rounds = league["settings"]["draft_rounds"]
-
-    for season in seasons:
-        for r in rosters:
-            roster_id = r["roster_id"]
-            for rd in range(1, draft_rounds + 1):
-                picks.append({
-                    "season": season,
-                    "round": rd,
-                    "original_owner_roster_id": roster_id,
-                    "current_owner_roster_id": roster_id,
-                    "source": "generated"
-                })
-
-    return picks
-
-
-def _apply_traded_picks(default_picks, traded_picks):
-    index = {
-        (p["season"], p["round"], p["original_owner_roster_id"]): p
-        for p in default_picks
-    }
-
-    for tp in traded_picks:
-        key = (
-            int(tp["season"]),
-            int(tp["round"]),
-            int(tp["roster_id"])
-        )
-
-        if key not in index:
-            continue
-
-        index[key]["current_owner_roster_id"] = int(tp["owner_id"])
-        index[key]["source"] = "traded"
-        index[key]["previous_owner_roster_id"] = int(
-            tp.get("previous_owner_id", tp["roster_id"])
-        )
-
-    return list(index.values())
-
-
-def build_dynasty_snapshot(client, league_id):
+    # --------------------------------------------------
+    # Fetch core league data
+    # --------------------------------------------------
     league = client.get_league(league_id)
     if not league or "league_id" not in league:
         raise ValueError(f"Invalid league_id or league not found: {league_id}")
@@ -67,13 +22,16 @@ def build_dynasty_snapshot(client, league_id):
     players_db = client.get_players()
     traded_picks = client.get_traded_picks(league_id)
 
+    # Build league metadata
     snapshot = {
         "league": {
             "league_id": league_id,
             "name": league.get("name"),
             "season": int(league.get("season")),
             "total_rosters": league.get("total_rosters"),
-            "settings": league.get("settings", {}),
+            "settings": normalize_league_settings(
+                    league.get("settings", {})
+                ),
             "roster_slots": normalize_roster_slots(
                 league.get("roster_positions", []),
                 league.get("settings", {})
@@ -82,15 +40,23 @@ def build_dynasty_snapshot(client, league_id):
         "teams": {}
     }
 
+    # Build teams + players
     for r in rosters:
         owner_id = str(r.get("owner_id"))
 
         snapshot["teams"][owner_id] = {
             "roster_id": r["roster_id"],
-            "players": [],
-            "picks": [],
-            "starters": r.get("starters", []),
-            "reserve": r.get("reserve", []),
+
+            "assets": {
+                "players": [],
+                "picks": []
+            },
+
+            "lineup": {
+                "starters": r.get("starters", []),
+                "reserve": r.get("reserve", [])
+            },
+
             "record": {
                 "wins": r.get("settings", {}).get("wins"),
                 "losses": r.get("settings", {}).get("losses"),
@@ -100,52 +66,30 @@ def build_dynasty_snapshot(client, league_id):
             }
         }
 
+
         for pid in r.get("players", []):
             player = players_db.get(str(pid))
             if not player:
                 continue
 
-            snapshot["teams"][owner_id]["players"].append({
+            snapshot["teams"][owner_id]["assets"]["players"].append({
                 "player_id": str(pid),
                 "name": player.get("full_name"),
                 "position": player.get("position"),
                 "team": player.get("team", "FA"),
-                "status": player.get("status"),
                 "birth_date": player.get("birth_date"),
             })
 
-    pick_seasons = _collect_pick_seasons(league, traded_picks)
 
-    default_picks = _generate_default_picks(
+    # Build and attach draft picks
+    picks_by_owner = build_league_picks(
         league=league,
         rosters=rosters,
-        seasons=pick_seasons
+        traded_picks=traded_picks
     )
 
-    all_picks = _apply_traded_picks(default_picks, traded_picks)
-
-    roster_id_to_owner = {
-        r["roster_id"]: str(r.get("owner_id"))
-        for r in rosters
-    }
-
-    for p in all_picks:
-        owner_id = roster_id_to_owner.get(p["current_owner_roster_id"])
-        if owner_id:
-            snapshot["teams"][owner_id]["picks"].append(p)
+    for owner_id, picks in picks_by_owner.items():
+        if owner_id in snapshot["teams"]:
+            snapshot["teams"][owner_id]["picks"] = picks
 
     return snapshot
-
-
-def debug_snapshot(snapshot):
-    print("League:", snapshot["league"]["name"])
-    print("Season:", snapshot["league"]["season"])
-    print("Teams:", len(snapshot["teams"]))
-    print("")
-
-    for owner, team in snapshot["teams"].items():
-        print(
-            f"Owner {owner} | "
-            f"Players: {len(team['players'])} | "
-            f"Picks: {len(team['picks'])}"
-        )

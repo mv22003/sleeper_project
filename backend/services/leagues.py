@@ -67,3 +67,13 @@ def get_all_user_leagues(client, user_id: str, start_year=2018, end_year=2025):
         USER_LEAGUES_CACHE_TIME[user_id] = time.time()
 
     return grouped
+
+
+def normalize_league_settings(settings: dict) -> dict:
+    """
+    Extract only league settings relevant for dynasty analysis.
+    """
+    return {
+        "draft_rounds": settings.get("draft_rounds"),
+        "playoff_teams": settings.get("playoff_teams"),
+    }

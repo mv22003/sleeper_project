@@ -21,7 +21,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 
-from sleeper import SleeperClient
+from backend.clients.sleeper_api import SleeperClient
 
 # Service modules contain all non-trivial logic
 from backend.services.ktc import *
@@ -46,7 +46,7 @@ app.add_middleware(
 )
 
 # Jinja2 template engine for HTML rendering
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="backend/templates")
 
 # Single shared client for all Sleeper API requests
 client = SleeperClient()
