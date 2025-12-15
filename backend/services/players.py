@@ -1,4 +1,5 @@
 import re
+from backend.services.player_aliases import PLAYER_NAME_ALIASES
 
 
 def build_roster_positions(client, roster, ktc_data):
@@ -90,3 +91,13 @@ def normalize_name(name: str) -> str:
     parts = [p for p in name.split() if p not in suffixes]
 
     return " ".join(parts).strip()
+
+
+def resolve_player_name(norm_name: str) -> str:
+    """
+    Resolve known name mismatches between Sleeper and KTC.
+
+    Returns the corrected normalized name if an alias exists,
+    otherwise returns the original name.
+    """
+    return PLAYER_NAME_ALIASES.get(norm_name, norm_name)

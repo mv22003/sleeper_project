@@ -81,7 +81,10 @@ def home(request: Request):
     """
     return templates.TemplateResponse(
         "home.html",
-        {"request": request}
+        {
+            "request": request,
+            "show_header": False
+        }
     )
 
 
@@ -191,7 +194,10 @@ def show_roster(request: Request, username: str, league_id: str):
 
         # Match Sleeper player to KTC value using normalized names
         norm_name = normalize_name(player.get("full_name"))
-        ktc_entry = ktc_by_name.get(norm_name)
+        lookup_name = resolve_player_name(norm_name)
+
+        ktc_entry = ktc_by_name.get(lookup_name)
+
 
         player_info = {
             "id": pid,
@@ -235,6 +241,10 @@ def show_roster(request: Request, username: str, league_id: str):
         {
             "request": request,
             "data": data,
-            "error": None
+            "error": None,
+            "show_header": True
         }
     )
+
+# Run project for debug
+# uvicorn backend.main:app --reload

@@ -10,65 +10,122 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-900 min-h-screen p-6">
+<body class="bg-zinc-950 min-h-screen flex items-center justify-center p-6">
 
-<!-- Main centered container -->
-<div class="max-w-xl mx-auto bg-gray-800 shadow-xl p-6 rounded-xl border border-gray-700">
+<!-- Vertical wrapper -->
+<div class="w-full max-w-xl text-center">
 
-    <!-- Application title -->
-    <h1 class="text-3xl font-bold text-center mb-6 text-indigo-400">
-        Sleeper Dynasty Analyzer
+    <!-- Logo placeholder -->
+    <div class="mx-auto mb-4 w-16 h-16
+                rounded-2xl
+                border-2 border-dashed border-white/20
+                flex items-center justify-center
+                text-white/30 text-xs">
+        LOGO
+    </div>
+
+    <!-- Title -->
+    <h1 class="text-3xl font-bold mb-2 text-indigo-400">
+        Dynasty Football Analyzer
     </h1>
 
-    <!-- Main form submits to /show_roster -->
-    <form action="/show_roster" method="get">
+    <!-- Subtitle -->
+    <p class="text-gray-400 mb-8">
+        Discover how good of a dynasty football player you really are
+    </p>
 
-        <!-- Username input -->
-        <label class="block font-semibold mb-1 text-gray-300">
-            Sleeper Username
-        </label>
-        <input
-            id="username"
-            name="username"
-            class="w-full bg-gray-700 border border-gray-600 text-gray-200 p-2 rounded mb-4"
-            placeholder="Enter your Sleeper username"
-            required
-        >
+    <!-- Input card -->
+    <div class="relative bg-zinc-900/70 backdrop-blur
+                shadow-2xl shadow-indigo-500/20
+                p-6 rounded-xl
+                border border-white/15
+                ring-1 ring-indigo-400/20
+                text-left">
 
-        <!-- League selector (populated dynamically via JS) -->
-        <label class="block font-semibold mb-1 text-gray-300">
-            League
-        </label>
-        <select
-            id="leagueSelect"
-            class="w-full bg-gray-700 border border-gray-600 text-gray-200 p-2 rounded mb-4"
-            disabled
-        >
-            <option>Select a league</option>
-        </select>
+        <form action="/show_roster" method="get">
 
-        <!-- Season selector (actually submits league_id) -->
-        <label class="block font-semibold mb-1 text-gray-300">
-            Season
-        </label>
-        <select
-            id="seasonSelect"
-            name="league_id"
-            class="w-full bg-gray-700 border border-gray-600 text-gray-200 p-2 rounded mb-6"
-            disabled
-        >
-            <option>Select a season</option>
-        </select>
+            <!-- Username input -->
+            <label class="block font-semibold mb-1 text-gray-300">
+                Sleeper Username
+            </label>
+            <input
+                id="username"
+                name="username"
+                placeholder="Enter your Sleeper username"
+                required
+                class="w-full h-11 px-3 mb-4
+                    bg-zinc-900/60
+                    border-2 border-white/50
+                    rounded-lg
+                    text-gray-200 placeholder-gray-500
+                    focus:outline-none
+                    focus:ring-2 focus:ring-indigo-400/40
+                    focus:border-indigo-400/50
+                    hover:border-indigo-400/40
+                    transition
+                    disabled:opacity-50 disabled:cursor-not-allowed">
 
-        <!-- Submit button -->
-        <button
-            type="submit"
-            class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 rounded disabled:opacity-50"
-        >
-            View Roster
-        </button>
+            <!-- League selector -->
+            <label class="block font-semibold mb-1 text-gray-300">
+                League
+            </label>
+            <select
+                id="leagueSelect"
+                disabled
+                class="w-full h-11 px-3 mb-4
+                    bg-zinc-900/60
+                    border-2 border-white/50
+                    rounded-lg
+                    text-gray-200 placeholder-gray-500
+                    focus:outline-none
+                    focus:ring-2 focus:ring-indigo-400/40
+                    focus:border-indigo-400/50
+                    hover:border-indigo-400/40
+                    transition
+                    disabled:opacity-50 disabled:cursor-not-allowed">
+                <option>Select a league</option>
+            </select>
 
-    </form>
+            <!-- Season selector -->
+            <label class="block font-semibold mb-1 text-gray-300">
+                Season
+            </label>
+            <select
+                id="seasonSelect"
+                name="league_id"
+                disabled
+                class="w-full h-11 px-3 mb-4
+                    bg-zinc-900/60
+                    border-2 border-white/50
+                    rounded-lg
+                    text-gray-200 placeholder-gray-500
+                    focus:outline-none
+                    focus:ring-2 focus:ring-indigo-400/40
+                    focus:border-indigo-400/50
+                    hover:border-indigo-400/40
+                    transition
+                    disabled:opacity-50 disabled:cursor-not-allowed">
+                <option>Select a season</option>
+            </select>
+
+            <!-- Centered button -->
+            <div class="flex justify-center">
+                <button
+                    type="submit"
+                    class="relative bg-indigo-600 hover:bg-indigo-500
+                           text-white font-semibold
+                           py-2 px-8 rounded-lg
+                           shadow-lg shadow-indigo-500/40
+                           hover:shadow-indigo-500/50
+                           hover:-translate-y-0.5
+                           transition-all duration-200
+                           disabled:opacity-50">
+                    View Roster
+                </button>
+            </div>
+
+        </form>
+    </div>
 </div>
 
 

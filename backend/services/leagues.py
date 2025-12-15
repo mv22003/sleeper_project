@@ -2,9 +2,7 @@ from collections import defaultdict
 import time
 
 
-# --------------------------------------------------
 # User Leagues Cache
-# --------------------------------------------------
 # Cache is keyed by user_id because leagues are user-specific
 USER_LEAGUES_CACHE = {}
 USER_LEAGUES_CACHE_TIME = {}

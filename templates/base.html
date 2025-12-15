@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <title>{% block title %}Sleeper Dynasty Analyzer{% endblock %}</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-zinc-950 min-h-screen text-gray-200">
+
+    {% if show_header %}
+    <!-- Header -->
+    <header class="fixed top-0 inset-x-0 z-50
+               border-b border-white/10
+               bg-zinc-950/90 backdrop-blur">
+
+        <div class="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+
+            <!-- Left: brand -->
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg border border-white/20"></div>
+
+                <a href="/" class="text-lg font-bold text-indigo-400">
+                    Dynasty Football Analyzer
+                </a>
+            </div>
+
+            <!-- Right: back button -->
+            <a href="/"
+            class="text-sm font-medium text-indigo-300
+                    px-3 py-1.5 rounded-lg
+                    border border-indigo-400/30
+                    transition
+                    hover:bg-indigo-400/10
+                    hover:border-indigo-400/60">
+                ← Home
+            </a>
+
+        </div>
+    </header>
+
+    {% endif %}
+
+    <!-- Main content -->
+    <main class="{% if show_header %}pt-20 p-6{% endif %}">
+        <div class="max-w-6xl mx-auto">
+
+            <!-- Page card -->
+            <div class="bg-zinc-900/70 backdrop-blur
+                        rounded-xl
+                        border border-white/15
+                        ring-1 ring-indigo-400/20
+                        shadow-2xl shadow-indigo-500/20
+                        p-6
+                        transition-all duration-300
+                        hover:shadow-indigo-500/40
+                        hover:ring-indigo-400/40
+                        hover:-translate-y-0.5">
+
+
+                {% block content %}{% endblock %}
+
+            </div>
+        </div>
+    </main>
+
+    {% block scripts %}{% endblock %}
+
+</body>
+</html>
